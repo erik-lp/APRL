@@ -1,0 +1,6 @@
+#if (${PACKAGE_NAME} && ${PACKAGE_NAME} != "")namespace ${PACKAGE_NAME}
+
+#end
+#parse("File Header.java")
+annotation ${NAME} {
+}

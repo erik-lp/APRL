@@ -1,0 +1,63 @@
+namespace
+using
+alias
+type
+class
+interface
+struct
+enum
+annotation
+partner
+this
+super
+init
+exec
+private
+bounded
+local
+public
+get
+set
+def
+const
+var
+val
+sample
+cover
+open
+final
+extension
+external
+sync
+function
+script
+operator
+params
+if
+unless
+elsif
+else
+for
+match
+when
+do
+while
+return (return@)
+break (break@)
+continue (continue@)
+or
+and
+not
+as
+inst (!inst)
+in (!in)
+to
+by
+try
+handle
+finally
+trigger
+true
+false
+none
+null

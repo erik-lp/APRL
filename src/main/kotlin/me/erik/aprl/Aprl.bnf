@@ -1,0 +1,187 @@
+{
+    parserClass='me.erik.aprl.parser.AprlParser'
+
+    extends='com.intellij.extapi.psi.ASTWrapperPsiElement'
+
+    psiClassPrefix='Aprl'
+    psiImplClassSuffix='Impl'
+    psiPackage='me.erik.aprl.lang.psi'
+    psiImplPackage='me.erik.aprl.lang.psi.impl'
+
+    elementTypeHolderClass='me.erik.aprl.lang.psi.AprlTypes'
+    elementTypeClass='me.erik.aprl.psi.AprlElementType'
+    tokenTypeClass='me.erik.aprl.psi.AprlTokenType'
+}
+
+aprlFile ::= preamble NL* (topLevelObject (NL+ topLevelObject?)*)?
+
+preamble ::= namespaceHeader? importList
+namespaceHeader ::= modifierList? NL* NAMESPACE identifier semi?
+importList ::= importHeader*
+importHeader ::= USING importIdentifier (COMMA importIdentifier)* semi?
+importIdentifier ::= identifier importAlias | identifier (PERIOD (MUL | LSQUARE simpleIdentifier importAlias? (COMMA simpleIdentifier importAlias?)* RSQUARE))?
+importAlias ::= ALIAS simpleIdentifier
+
+topLevelObject ::= classDeclaration | structDeclaration | enumDeclaration | functionDeclaration | propertyDeclaration | typeDeclaration
+
+classDeclaration ::= modifierList? NL* (CLASS | INTERFACE | ANNOTATION_) NL* simpleIdentifier (NL* typeParameters)? (NL* primaryConstructor)? (NL* LARROW NL* delegationSpecifiers)? (NL* classBody)?
+classBody ::= LCURLY NL* classMember* NL* RCURLY
+primaryConstructor ::= modifierList? NL* (INIT NL*)? classParameters
+classParameters ::= LPAREN NL* (classParameter (NL* COMMA classParameter)*)? RPAREN
+classParameter ::= modifierList? NL* (VAL | VAR)? NL* simpleIdentifier NL* COLON NL* type (NL* ASSIGN NL* expression)?
+delegationSpecifiers ::= annotation* NL* delegationSpecifier (NL* COMMA NL* delegationSpecifier)*
+delegationSpecifier ::= constructorInvocation | userType
+constructorInvocation ::= userType callSuffix
+callSuffix ::= typeArguments? valueArguments
+valueArguments ::= LPAREN NL* (valueArgument ( NL* COMMA NL* valueArgument)*)? NL* RPAREN
+valueArgument ::= (simpleIdentifier NL* ASSIGN)? NL* expression
+classMember ::= (topLevelObject | secondaryConstructor | loadScript | initializerBody | partnerDeclaration) NL+
+secondaryConstructor ::= modifierList? NL* INIT NL* functionValueParameters (NL* COLON NL* constructorDelegationCall)? NL* block?
+constructorDelegationCall ::= (THIS | SUPER) NL* valueArguments
+loadScript ::= EXEC NL* block
+initializerBody ::= INIT NL* block
+partnerDeclaration ::= modifierList? NL* PARTNER NL* classBody
+
+typeArguments ::= LANGLE NL* typeProjection (NL* COMMA NL* typeProjection)* NL* RANGLE
+typeProjection ::= type | TRIPLE_PERIOD
+typeParameters ::= LANGLE NL* typeParameter (NL* COMMA NL* typeParameter)* NL* RANGLE
+typeParameter ::= modifierList? NL* simpleIdentifier (NL* COLON NL* type (NL* CONJ NL* type)*)?
+type ::= annotation* NL* (functionType | parenthesizedType | nullableType | typeReference)
+functionType ::= (functionTypeReceiver NL* PERIOD NL*)? functionTypeParameters NL* RARROW_THICK NL* type
+functionTypeReceiver ::= parenthesizedType | nullableType | typeReference
+functionTypeParameters ::= LPAREN NL* ((parameter | type) (NL* COMMA NL* (parameter | type))*)? NL* RPAREN
+parenthesizedType ::= LPAREN NL* type NL* RPAREN
+typeReference ::= LPAREN NL* typeReference NL* RPAREN | userType
+nullableType ::= (typeReference | parenthesizedType) NL* QUEST+
+userType ::= simpleUserType (NL* PERIOD NL* simpleUserType)*
+simpleUserType ::= simpleIdentifier (NL* typeArguments)*
+
+structDeclaration ::= modifierList? NL* STRUCT NL* simpleIdentifier (NL* LARROW NL* delegationSpecifiers)? (NL* classBody)?
+
+enumDeclaration ::= modifierList? NL* ENUM NL* simpleIdentifier (NL* primaryConstructor)? (NL* enumBody)
+enumBody ::= LCURLY NL* enumEntries? (NL* SEMICOLON NL* classMember*)? NL* RCURLY
+enumEntries ::= (enumEntry NL*)+ SEMICOLON?
+enumEntry ::= simpleIdentifier (NL* valueArguments)? (NL* classBody)? (NL* COMMA)?
+
+propertyDeclaration ::= localPropertyDeclaration (NL* propertyBody)?
+localPropertyDeclaration ::= modifierList? NL* (DEF | CONST | VAR | VAL) (NL* typeParameters)? (NL* type NL* PERIOD)? NL* (variableDeclaration | multiVariableDeclaration) (NL* ASSIGN expression)?
+variableDeclaration ::= simpleIdentifier (NL* COLON NL* type)?
+multiVariableDeclaration ::= LPAREN NL* variableDeclaration (COMMA variableDeclaration)* NL* RPAREN
+propertyBody ::= LCURLY NL* (getter (semi setter)? |  setter (semi getter)?)? NL* RCURLY
+getter ::= modifierList? NL* GETTER_ (NL* LPAREN NL* RPAREN)? NL* functionBody?
+setter ::= modifierList? NL* SETTER_ NL* (LPAREN (annotation+ | parameterModifier)* (simpleIdentifier | parameter) RPAREN NL* functionBody)?
+
+typeDeclaration ::= modifierList? NL* TYPE_ NL* simpleIdentifier (NL* typeParameters)? NL* ASSIGN NL* type
+
+functionDeclaration ::= modifierList? NL* (FUNCTION | SCRIPT | OPERATOR) (NL* typeParameters)? (NL* identifier)? NL* functionValueParameters (NL* RARROW NL* type)? (NL* functionBody)?
+functionValueParameters ::= LPAREN NL* (functionValueParameter (NL* COMMA NL* functionValueParameter)*)? NL* RPAREN
+functionValueParameter ::= modifierList? NL* parameter (NL* ASSIGN NL* expression)?
+parameter ::= simpleIdentifier COLON type
+functionBody ::= block | ASSIGN NL* expression
+
+block ::= LCURLY NL* statements NL* RCURLY
+statements ::= NL* (statement (NL+ statement?)*)?
+statement ::= annotation* NL* expression | localPropertyDeclaration
+
+expression ::= assignment
+
+assignment ::= (identifier arrayAccess* assignmentOperator)? disjunction
+assignmentOperator ::= ASSIGN | DEFINE | ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN | MOD_ASSIGN | EXP_ASSIGN | CONJ_ASSIGN | DISJ_ASSIGN | XOR_ASSIGN | ELVIS_ASSIGN
+
+disjunction ::= conjunction (disjunctionOperator conjunction)*
+disjunctionOperator ::= DISJ | OR
+
+conjunction ::= equalityComparison (conjunctionOperator equalityComparison)*
+conjunctionOperator ::= CONJ | AND
+
+equalityComparison ::= identityComparison (equalityOperator identityComparison)*
+equalityOperator ::= EQUAL | NEQUAL
+
+identityComparison ::= comparison (identityOperator comparison)*
+identityOperator ::= IDENTICAL | NIDENTICAL
+
+comparison ::= namedInfix (comparisonOperator namedInfix)*
+comparisonOperator ::= LANGLE | NLANGLE | RANGLE | NRANGLE | LEQ | NLEQ | GEQ | NGEQ | SPACESHIP
+
+namedInfix ::= elvisExpression ((inOperator elvisExpression) | (instOperator type))*
+inOperator ::= IN | NOT_IN
+instOperator ::= INST | NOT_INST
+
+elvisExpression ::= infixFunctionCall (elvisOperator infixFunctionCall)*
+elvisOperator ::= ELVIS
+
+infixFunctionCall ::= rangeExpression (simpleIdentifier rangeExpression?)*
+
+rangeExpression ::= additiveExpression (toOperator additiveExpression (byOperator additiveExpression)?)*
+toOperator ::= DOUBLE_PERIOD | TO
+byOperator ::= BY
+
+additiveExpression ::= multiplicativeExpression (additiveOperator multiplicativeExpression)*
+additiveOperator ::= ADD | SUB
+
+multiplicativeExpression ::= exponentialExpression (multiplicativeOperator exponentialExpression)*
+multiplicativeOperator ::= MUL | DIV | MOD
+
+exponentialExpression ::= xorExpression (exponentialOperator xorExpression)*
+exponentialOperator ::= EXP
+
+xorExpression ::= typeExpression (xorOperator typeExpression)*
+xorOperator ::= XOR
+
+typeExpression ::= prefixUnaryExpression (typeOperator type)*
+typeOperator ::= AS
+
+prefixUnaryExpression ::= prefixUnaryOperation* postfixUnaryExpression
+prefixUnaryOperation ::= INCR | DECR | ADD | SUB | EXCL | NOT | DOUBLE_AT | annotation+ | labelDefinition
+
+postfixUnaryExpression ::= atomicExpression postfixUnaryOperation*
+postfixUnaryOperation ::= INCR | DECR | DOUBLE_EXCL | callSuffix | arrayAccess | memberAccessOperator postfixUnaryExpression
+memberAccessOperator ::= PERIOD | QUEST_PERIOD
+
+atomicExpression ::= parenthesizedExpression | literalConstant | functionLiteral | thisExpression | superExpression | conditionalExpression | tryExpression| jumpExpression | loopExpression | collectionLiteral | simpleIdentifier | userType
+parenthesizedExpression ::= LPAREN expression RPAREN
+literalConstant ::= nullLiteral | boolLiteral | trileanLiteral | INTEGER_LITERAL | LONG_LITERAL | SHORT_LITERAL | BYTE_LITERAL | FLOAT_LITERAL | DOUBLE_LITERAL | COMPLEX_LITERAL | CHARACTER_LITERAL | STRING_LITERAL | RAW_STRING_LITERAL
+
+nullLiteral ::= NULL
+boolLiteral ::= TRUE | FALSE
+trileanLiteral ::= TRUE | FALSE | NONE
+
+functionLiteral ::= annotation* NL* (LCURLY NL* statements NL* RCURLY | LCURLY NL* lambdaParameters NL* RARROW_THICK NL* statements NL* RCURLY | lambdaParameters NL* RARROW_THICK NL* statement)
+lambdaParameters ::= lambdaParameter? (NL* COMMA NL* lambdaParameter)*
+lambdaParameter ::= variableDeclaration | multiVariableDeclaration (NL* COLON NL* type)?
+thisExpression ::= THIS labelReference?
+superExpression ::= SUPER (LANGLE NL* type NL* RANGLE)? labelReference?
+conditionalExpression ::= ifExpression | matchExpression
+ifExpression ::= (IF | UNLESS) NL* LPAREN NL* expression NL* RPAREN NL* controlStructureBody (NL* ELSIF NL* LPAREN NL* expression NL* RPAREN NL* controlStructureBody)* (NL* ELSE NL* controlStructureBody)?
+controlStructureBody ::= block | expression
+matchExpression ::= MATCH NL* LPAREN NL* expression NL* RPAREN NL* LCURLY NL* (matchEntry NL*)+ NL* RCURLY
+matchEntry ::= WHEN NL* literalConstant (NL* COMMA NL* literalConstant)* NL* '=>' NL* controlStructureBody semi? | ELSE NL* RARROW_THICK NL* controlStructureBody
+tryExpression ::= TRY NL* block (NL* handleBlock)* (NL* finallyBlock)?
+handleBlock ::= HANDLE NL* LPAREN NL* annotation* NL* simpleIdentifier NL* COLON NL* userType (NL* CONJ NL* userType)* NL* RPAREN NL* block
+finallyBlock ::= FINALLY NL* block
+jumpExpression ::= TRIGGER NL* expression | (RETURN | RETURN_AT simpleIdentifier) expression? | CONTINUE | CONTINUE_AT simpleIdentifier | BREAK | BREAK_AT simpleIdentifier
+loopExpression ::= forExpression | whileExpression | doWhileExpression
+forExpression ::= FOR NL* LPAREN NL* annotation* NL* (variableDeclaration | multiVariableDeclaration) NL* 'in' NL* expression NL* RPAREN NL* controlStructureBody
+whileExpression ::= WHILE NL* LPAREN NL* expression NL* RPAREN NL* controlStructureBody
+doWhileExpression ::= DO NL* controlStructureBody NL* WHILE NL* LPAREN NL* expression NL* RPAREN
+collectionLiteral ::= LSQUARE NL* expression? (NL* COMMA NL* expression)* NL* RSQUARE
+labelDefinition ::= simpleIdentifier AT NL*
+labelReference ::= AT simpleIdentifier
+arrayAccess ::= LSQUARE NL* (expression (NL* COMMA NL* expression)*)? NL* RSQUARE
+
+modifierList ::= (annotation NL* | modifier NL*)+
+modifier ::= visibilityModifier | inheritanceModifier | parameterModifier | functionModifier
+visibilityModifier ::= PUBLIC | LOCAL | BOUNDED | PRIV
+inheritanceModifier ::= SAMPLE | FINAL | OPEN | COVER
+parameterModifier ::= PARAMS
+functionModifier ::= EXTENSION | SYNC | EXTERN
+
+annotation ::= HASH (unescapedAnnotation | LSQUARE NL* unescapedAnnotation+ NL* RSQUARE)
+unescapedAnnotation ::= identifier typeArguments? valueArguments?
+
+identifier ::= simpleIdentifier (NL* PERIOD NL* simpleIdentifier)*
+simpleIdentifier ::= IDENTIFIER_ | SETTER_ | GETTER_ // TODO: other soft keywords?
+
+semi ::= NL+ | NL* SEMICOLON NL*
+
+COMMENT ::= EOL_COMMENT | BLOCK_COMMENT | DOC_COMMENT

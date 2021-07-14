@@ -1,0 +1,25 @@
+<idea-plugin>
+    <id>me.erik.aprl</id>
+    <name>APRL</name>
+    <vendor>ErikLP</vendor>
+    
+    <!-- Product and plugin compatibility requirements -->
+    <!-- https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+    
+    <actions>
+        <action id="APRL.NewFile" class="me.erik.aprl.actions.NewAprlFileAction">
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="NewGroup1"/>
+        </action>
+    </actions>
+    
+    <extensions defaultExtensionNs="com.intellij">
+        <startupActivity implementation="me.erik.aprl.compiler.AprlCompilerStartupActivity"/>
+        <fileType name="APRL" implementationClass="me.erik.aprl.AprlFileType" fieldName="INSTANCE" language="APRL" extensions="aprl"/>
+        <lang.commenter language="APRL" implementationClass="me.erik.aprl.AprlCommenter"/>
+        <lang.parserDefinition language="APRL" implementationClass="me.erik.aprl.AprlParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="APRL" implementationClass="me.erik.aprl.AprlSyntaxHighlighterFactory"/>
+    </extensions>
+
+</idea-plugin>
